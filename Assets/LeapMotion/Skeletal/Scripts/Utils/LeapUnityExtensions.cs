@@ -39,7 +39,7 @@ namespace Leap {
 
   public static class UnityMatrixExtension {
     public static readonly Vector LEAP_UP = new Vector(0, 1, 0);
-    public static readonly Vector LEAP_FORWARD = new Vector(0, 0, 1);
+    public static readonly Vector LEAP_FORWARD = new Vector(0, 0, -1);
     public static readonly Vector LEAP_ORIGIN = new Vector(0, 0, 0);
 
     public static Quaternion Rotation(this Matrix matrix) {

@@ -11,13 +11,16 @@ using Leap;
 // A deforming, very low poly count hand.
 public class PolyHand : HandModel {
   public override void InitHand(Transform deviceTransform) {
-    UpdateHand(deviceTransform);
+    for (int f = 0; f < fingers.Length; ++f) {
+      if (fingers[f] != null)
+        fingers[f].InitFinger(deviceTransform);
+    }
   }
 
   public override void UpdateHand(Transform deviceTransform) {
     for (int f = 0; f < fingers.Length; ++f) {
       if (fingers[f] != null)
-        fingers[f].InitFinger(deviceTransform);
+        fingers[f].UpdateFinger(deviceTransform);
     }
   }
 }

@@ -18,15 +18,12 @@ public class RiggedHand : HandModel {
     Hand hand = GetLeapHand();
 
     Transform arm = GetArm();
-    Transform wrist = arm.Find("Wrist");
     Finger finger = hand.Fingers[1];
-    string finger_name = RiggedFinger.FINGER_NAMES[1];
 
     Vector3 leap_index_mcp = finger.JointPosition(Finger.FingerJoint.JOINT_MCP).ToUnityScaled();
     Vector3 leap_index_dip = finger.JointPosition(Finger.FingerJoint.JOINT_PIP).ToUnityScaled();
-    Vector3 index0 = wrist.Find(finger_name + "A")
-                          .Find(finger_name + "B")
-                          .Find(finger_name + "C").localPosition;
+    Vector3 index0 = fingers[1].GetComponentsInChildren<Transform>()[0].
+                                GetComponentsInChildren<Transform>()[0].localPosition;
     float scale = (leap_index_mcp - leap_index_dip).magnitude / index0.magnitude;
     arm.localScale = new Vector3(scale, scale, scale);
   }

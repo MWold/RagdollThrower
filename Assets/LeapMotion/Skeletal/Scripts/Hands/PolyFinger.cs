@@ -15,26 +15,24 @@ public class PolyFinger : FingerModel {
   const int TRIANGLE_INDICES_PER_QUAD = 6;
   const int VERTICES_PER_QUAD = 4;
 
-  public Material material;
   public int sides = 4;
   public bool smoothNormals = false;
   public float startingAngle = 0.0f;
   public float[] widths = new float[NUM_JOINTS];
   
-  private Mesh mesh_;
   private Vector3[] vertices_;
   private Vector3[] normals_;
   private Vector3[] joint_vertices_;
 
+  private Mesh mesh_;
   private Mesh cap_mesh_;
   private Vector3[] cap_vertices_;
 
   void Update() {
-    if (mesh_ == null)
+    if (vertices_ == null)
       return;
 
     mesh_.vertices = vertices_;
-    mesh_.RecalculateBounds();
 
     if (smoothNormals)
       mesh_.normals = normals_;
@@ -42,12 +40,14 @@ public class PolyFinger : FingerModel {
       mesh_.RecalculateNormals();
 
     cap_mesh_.vertices = cap_vertices_;
-    cap_mesh_.RecalculateBounds();
     cap_mesh_.RecalculateNormals();
 
-    Graphics.DrawMesh(mesh_, Matrix4x4.identity, material, 0);
-    if (widths[0] != 0 || widths[NUM_JOINTS - 1] != 0)
-      Graphics.DrawMesh(cap_mesh_, Matrix4x4.identity, material, 0);
+    CombineInstance[] combine = new CombineInstance[2];
+    combine[0].mesh = mesh_;
+    combine[1].mesh = cap_mesh_;
+
+    GetComponent<MeshFilter>().mesh.CombineMeshes(combine, true, false);
+    GetComponent<MeshFilter>().mesh.RecalculateBounds();
   }
 
   protected Quaternion GetJointRotation(int joint) {
@@ -71,8 +71,8 @@ public class PolyFinger : FingerModel {
     int vertex_index = 0;
 
     for (int i = 0; i < NUM_BONES; ++i) {
-      Vector3 joint_position = deviceTransform.TransformPoint(GetJointPosition(i));
-      Vector3 next_joint_position = deviceTransform.TransformPoint(GetJointPosition(i + 1));
+      Vector3 joint_position = deviceTransform.TransformDirection(GetJointPosition(i));
+      Vector3 next_joint_position = deviceTransform.TransformDirection(GetJointPosition(i + 1));
       Quaternion joint_rotation = deviceTransform.rotation * GetJointRotation(i);
       Quaternion next_joint_rotation = deviceTransform.rotation * GetJointRotation(i + 1);
 
@@ -103,8 +103,8 @@ public class PolyFinger : FingerModel {
   }
 
   protected void UpdateCapMesh(Transform deviceTransform) {
-    Vector3 base_position = deviceTransform.TransformPoint(GetJointPosition(0));
-    Vector3 tip_position = deviceTransform.TransformPoint(GetJointPosition(NUM_JOINTS - 1));
+    Vector3 base_position = deviceTransform.TransformDirection(GetJointPosition(0));
+    Vector3 tip_position = deviceTransform.TransformDirection(GetJointPosition(NUM_JOINTS - 1));
     Quaternion base_rotation = deviceTransform.rotation * GetJointRotation(0);
     Quaternion tip_rotation = deviceTransform.rotation * GetJointRotation(NUM_JOINTS - 1);
 
@@ -119,24 +119,14 @@ public class PolyFinger : FingerModel {
     mesh_ = new Mesh();
 
     int vertex_index = 0;
-    vertices_ = mesh_.vertices;
     int num_vertices = VERTICES_PER_QUAD * sides * NUM_BONES;
-    if (vertices_.Length != num_vertices)
-      Array.Resize(ref vertices_, num_vertices);
-
-    normals_ = mesh_.normals;
-    if (normals_.Length != num_vertices)
-      Array.Resize(ref normals_, num_vertices);
-
-    Vector2[] uv = mesh_.uv;
-    if (uv.Length != num_vertices)
-      Array.Resize(ref uv, num_vertices);
+    vertices_ = new Vector3[num_vertices];
+    normals_ = new Vector3[num_vertices];
+    Vector2[] uv = new Vector2[num_vertices];
 
     int triangle_index = 0;
-    int[] triangles = mesh_.triangles;
     int num_triangles = TRIANGLE_INDICES_PER_QUAD * sides * NUM_BONES;
-    if (triangles.Length != num_triangles)
-      Array.Resize(ref triangles, num_triangles);
+    int[] triangles = new int[num_triangles];
 
     for (int i = 0; i < NUM_BONES; ++i) {
       for (int s = 0; s < sides; ++s) {
@@ -166,7 +156,7 @@ public class PolyFinger : FingerModel {
     mesh_.triangles = triangles;
   }
 
-  protected void InitCaps() {
+  protected void InitCapsMesh() {
     cap_mesh_ = new Mesh();
 
     cap_vertices_ = cap_mesh_.vertices;
@@ -210,9 +200,10 @@ public class PolyFinger : FingerModel {
 
   public override void InitFinger(Transform deviceTransform) {
     InitJointVertices();
-    InitCaps();
+    InitCapsMesh();
     InitMesh();
 
+    GetComponent<MeshFilter>().mesh = new Mesh();
     UpdateFinger(deviceTransform);
   }
 
